@@ -56,11 +56,17 @@ def expand_schema(schema):
         # If the schema is type="object", then return a field for each parameter.
         fields = []
         for key in schema_properties.keys():
+            desc = ''
+            try:
+                desc =schema_properties[key].get('description', '')
+            except AttributeError:
+                pass
+
             fields.append(coreapi.Field(
                 name=key,
                 location='form',
                 required=schema_properties.get('required', key in schema_required),
-                description=schema_properties[key].get('description', '')
+                description=desc
             ))
         return fields
 
@@ -91,9 +97,9 @@ def decode_raml(bytestring, base_url=None):
             body = resource.body[0]
             encoding = body.mime_type
 
-            for form_param_name in body.form_params.keys() or []:
+            for form_param_name in body.form_params or []:
                 param = body.form_params[form_param_name]
-                field = coreapi.Field(form_param_name, param['required'], location='form', description=param['description'])
+                field = coreapi.Field(form_param_name, param.get('required', False), location='form', description=param.get('description', False))
                 fields.append(field)
 
             if body.schema:
@@ -103,23 +109,27 @@ def decode_raml(bytestring, base_url=None):
                     body.schema = schema_json[body.schema]
 
                 schema_fields = expand_schema(body.schema)
-                fields.extend(schema_fields)
+                if type(schema_fields) == list:
+                    fields.extend(schema_fields)
+                else:
+                    fields.append(schema_fields)
 
-        link = coreapi.Link(
-            url=resource.absolute_uri,
-            action=resource.method.lower(),
-            encoding=encoding,
-            fields=fields,
-            title=resource.display_name,
-            description=str(resource.description) if resource.description else ''
-        )
-        section = resource.path.strip('/').split('/')[0]
-        if section:
-            if section not in content:
-                content[section] = {}
-            content[section][resource.display_name] = link
-        else:
-            content[resource.display_name] = link
+        if resource.method is not None:
+            link = coreapi.Link(
+                url=resource.absolute_uri,
+                action=resource.method.lower(),
+                encoding=encoding,
+                fields=fields,
+                title=resource.display_name,
+                description=str(resource.description) if resource.description else ''
+            )
+            section = resource.path.strip('/').split('/')[0]
+            if section:
+                if section not in content:
+                    content[section] = {}
+                content[section][resource.display_name] = link
+            else:
+                content[resource.display_name] = link
 
     description = ''
     if raml.documentation:
