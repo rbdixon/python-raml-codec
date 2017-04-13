@@ -121,7 +121,8 @@ def decode_raml(bytestring, base_url=None):
                 encoding=encoding,
                 fields=fields,
                 title=resource.display_name,
-                description=str(resource.description) if resource.description else ''
+                description=str(resource.description) if resource.description else '',
+                traits=resource.is_,
             )
             section = resource.path.strip('/').split('/')[0]
             if section:
