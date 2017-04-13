@@ -8,7 +8,6 @@ import posixpath
 import requests
 import yaml
 
-
 class RAMLLoader(RAMLFileLoader):
     """
     Extends ramlfications.RAMLLoader, but uses network fetchs to resolve
@@ -98,6 +97,11 @@ def decode_raml(bytestring, base_url=None):
                 fields.append(field)
 
             if body.schema:
+                if type(body.schema) == str:
+                    # Lookup schema first
+                    schema_json = list(filter(lambda s: list(s.keys()).pop() == body.schema, raml.schemas))[0]
+                    body.schema = schema_json[body.schema]
+
                 schema_fields = expand_schema(body.schema)
                 fields.extend(schema_fields)
 
