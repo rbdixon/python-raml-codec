@@ -67,7 +67,6 @@ def expand_schema(schema):
     # If the schema is not type="object", then return a single field.
     return coreapi.Field(name='data', location='body', required=True, description=schema.get('description', ''))
 
-
 def decode_raml(bytestring, base_url=None):
     loader = RAMLLoader(base_url)
     data = loader.load(bytestring)
@@ -92,8 +91,9 @@ def decode_raml(bytestring, base_url=None):
             body = resource.body[0]
             encoding = body.mime_type
 
-            for form_param in body.form_params or []:
-                field = coreapi.Field(param.name, param.required, location='form', description=param.description)
+            for form_param_name in body.form_params.keys() or []:
+                param = body.form_params[form_param_name]
+                field = coreapi.Field(form_param_name, param['required'], location='form', description=param['description'])
                 fields.append(field)
 
             if body.schema:
